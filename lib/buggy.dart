@@ -90,6 +90,7 @@ class CoverageWorkaroundConfig {
   /// Creates a new coverage workaround configuration.
   const CoverageWorkaroundConfig({
     this.excludePatterns = const [],
+    this.includePatterns = const [],
     this.target = 'test',
   });
 
@@ -97,6 +98,12 @@ class CoverageWorkaroundConfig {
   ///
   /// Example: `['*.g.dart', '*.freezed.dart']`
   final List<String> excludePatterns;
+
+  /// Glob patterns to include files in the generated import list.
+  ///
+  /// When non-empty, only files matching at least one pattern are included.
+  /// Example: `['src/models/*', 'src/services/*']`
+  final List<String> includePatterns;
 
   /// Target test directory for the generated file.
   ///
@@ -163,10 +170,19 @@ Future<void> runCoverageWorkaround([CoverageWorkaroundConfig? config]) async {
       .map((f) => f.path.replaceAll(r'\', '/'))
       .toList();
 
-  // 5. Filter exclusions
+  // 5. Filter by include/exclude patterns
   final filteredFiles = dartFiles.where((filePath) {
     final relativePath =
         filePath.startsWith('lib/') ? filePath.substring(4) : filePath;
+
+    // If include patterns are set, file must match at least one
+    if (cfg.includePatterns.isNotEmpty) {
+      final included = cfg.includePatterns
+          .any((pattern) => _matchesPattern(relativePath, pattern));
+      if (!included) return false;
+    }
+
+    // Exclude patterns filter out matching files
     return !cfg.excludePatterns
         .any((pattern) => _matchesPattern(relativePath, pattern));
   }).toList();

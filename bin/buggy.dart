@@ -114,6 +114,12 @@ ArgParser _buildFlutterTestCoverageWorkaroundParser() {
       help: 'Print help for this command.',
     )
     ..addMultiOption(
+      'include',
+      abbr: 'i',
+      help: 'Include only files matching pattern (glob). '
+          'Can be specified multiple times.',
+    )
+    ..addMultiOption(
       'exclude',
       abbr: 'e',
       help: 'Exclude files matching pattern (glob). '
@@ -314,9 +320,11 @@ Future<void> _handleFlutterTestCoverageWorkaround(
       );
     }
 
+    final includePatterns = results.multiOption('include');
     final excludePatterns = results.multiOption('exclude');
 
     final config = buggy.CoverageWorkaroundConfig(
+      includePatterns: includePatterns,
       excludePatterns: excludePatterns,
       target: results.option('target')!,
     );
