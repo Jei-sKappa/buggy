@@ -41,8 +41,8 @@ Usage: buggy <command> [arguments]
 
 Global options:
 -h, --help       Print this usage information.
--v, --verbose    Show additional command output.
-    --version    Print the tool version.
+    --verbose    Show additional command output.
+-v, --version    Print the tool version.
 
 Available commands:
   report    Generate coverage report from LCOV file

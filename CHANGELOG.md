@@ -3,6 +3,7 @@
 - **Breaking:** `BuggyConfig.excludePattern` (`String?`) replaced with `excludePatterns` (`List<String>`).
 - `report --exclude` (`-e`) now accepts multiple patterns (e.g., `--exclude "**/test/**" --exclude "*.g.dart"`).
 - Changed `flutter-test-coverage-workaround` output path from `<target>/src/.buggy/` to `<target>/.buggy/`.
+- Fixed `-v` flag to print version instead of enabling verbose mode.
 
 ## 1.1.1
 

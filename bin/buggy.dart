@@ -22,11 +22,15 @@ ArgParser buildParser() {
     )
     ..addFlag(
       'verbose',
-      abbr: 'v',
       negatable: false,
       help: 'Show additional command output.',
     )
-    ..addFlag('version', negatable: false, help: 'Print the tool version.')
+    ..addFlag(
+      'version',
+      abbr: 'v',
+      negatable: false,
+      help: 'Print the tool version.',
+    )
     ..addCommand('report', _buildReportParser())
     ..addCommand('run', _buildRunParser());
 
