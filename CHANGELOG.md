@@ -1,3 +1,8 @@
+## 1.2.0
+
+- **Breaking:** `BuggyConfig.excludePattern` (`String?`) replaced with `excludePatterns` (`List<String>`).
+- `report --exclude` (`-e`) now accepts multiple patterns (e.g., `--exclude "**/test/**" --exclude "*.g.dart"`).
+
 ## 1.1.1
 
 - Fixed `flutter-test-coverage-workaround` to skip files with `part of` directives, which cannot be imported directly.

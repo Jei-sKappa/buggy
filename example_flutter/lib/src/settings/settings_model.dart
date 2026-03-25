@@ -6,9 +6,9 @@ class SettingsModel {
     bool darkMode = false,
     double fontSize = 14.0,
     String locale = 'en',
-  })  : _darkMode = ValueNotifier<bool>(darkMode),
-        _fontSize = ValueNotifier<double>(fontSize),
-        _locale = ValueNotifier<String>(locale);
+  }) : _darkMode = ValueNotifier<bool>(darkMode),
+       _fontSize = ValueNotifier<double>(fontSize),
+       _locale = ValueNotifier<String>(locale);
 
   final ValueNotifier<bool> _darkMode;
   final ValueNotifier<double> _fontSize;

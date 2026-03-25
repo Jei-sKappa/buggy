@@ -3,7 +3,7 @@ import 'package:args/args.dart';
 import 'package:buggy/buggy.dart' as buggy;
 
 /// Current version of the Buggy tool.
-const String version = '1.1.0';
+const String version = '1.2.0';
 
 /// Builds and configures the main command line argument parser.
 ///
@@ -56,10 +56,12 @@ ArgParser _buildReportParser() {
       defaultsTo: 'coverage/lcov.info',
     )
     ..addOption('output', abbr: 'o', help: 'Output file path (default: stdout)')
-    ..addOption(
+    ..addMultiOption(
       'exclude',
       abbr: 'e',
-      help: 'Exclude files matching pattern (glob)',
+      help:
+          'Exclude files matching pattern (glob). '
+          'Can be specified multiple times.',
     )
     ..addOption(
       'fail-under',
@@ -116,13 +118,15 @@ ArgParser _buildFlutterTestCoverageWorkaroundParser() {
     ..addMultiOption(
       'include',
       abbr: 'i',
-      help: 'Include only files matching pattern (glob). '
+      help:
+          'Include only files matching pattern (glob). '
           'Can be specified multiple times.',
     )
     ..addMultiOption(
       'exclude',
       abbr: 'e',
-      help: 'Exclude files matching pattern (glob). '
+      help:
+          'Exclude files matching pattern (glob). '
           'Can be specified multiple times.',
     )
     ..addOption(
@@ -250,7 +254,7 @@ Future<void> _handleReportCommand(List<String> arguments, bool verbose) async {
     final config = buggy.BuggyConfig(
       inputPath: results.option('input')!,
       outputPath: results.option('output'),
-      excludePattern: results.option('exclude'),
+      excludePatterns: results.multiOption('exclude'),
       uncoveredOnly: results.flag('uncovered-only'),
       failUnder: failUnder,
       summary: results.flag('summary'),

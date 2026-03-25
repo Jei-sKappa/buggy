@@ -17,7 +17,7 @@ typedef _CoverageData = Map<String, Map<String, dynamic>>;
 /// final config = BuggyConfig(
 ///   inputPath: 'coverage/lcov.info',
 ///   outputPath: 'coverage_report.md',
-///   excludePattern: '**/test/**',
+///   excludePatterns: ['**/test/**', '*.g.dart'],
 ///   uncoveredOnly: true,
 ///   failUnder: 80.0,
 ///   summary: false,
@@ -31,7 +31,7 @@ class BuggyConfig {
   const BuggyConfig({
     this.inputPath = 'coverage/lcov.info',
     this.outputPath,
-    this.excludePattern,
+    this.excludePatterns = const [],
     this.uncoveredOnly = false,
     this.failUnder,
     this.summary = false,
@@ -48,13 +48,13 @@ class BuggyConfig {
   /// If `null`, the report will be printed to stdout.
   final String? outputPath;
 
-  /// Glob pattern to exclude files from the report.
+  /// Glob patterns to exclude files from the report.
   ///
   /// Supports wildcards like `*` and `?`. Examples:
   /// - `**/test/**` - Exclude all files in test directories
   /// - `**/*_test.dart` - Exclude all test files
   /// - `**/generated/**` - Exclude generated code
-  final String? excludePattern;
+  final List<String> excludePatterns;
 
   /// Whether to show only files with uncovered lines.
   ///
@@ -139,8 +139,10 @@ Future<void> runCoverageWorkaround([CoverageWorkaroundConfig? config]) async {
   // 2. Read and parse pubspec.yaml
   final pubspecContent = await pubspecFile.readAsString();
 
-  final nameMatch =
-      RegExp(r'^name:\s*(.+)$', multiLine: true).firstMatch(pubspecContent);
+  final nameMatch = RegExp(
+    r'^name:\s*(.+)$',
+    multiLine: true,
+  ).firstMatch(pubspecContent);
   if (nameMatch == null) {
     stderr.writeln('Error: Could not find "name:" field in pubspec.yaml.');
     exit(1);
@@ -173,19 +175,22 @@ Future<void> runCoverageWorkaround([CoverageWorkaroundConfig? config]) async {
   // 5. Filter by include/exclude patterns and skip `part of` files
   final partOfPattern = RegExp(r'^\s*part\s+of\s+', multiLine: true);
   final filteredFiles = dartFiles.where((filePath) {
-    final relativePath =
-        filePath.startsWith('lib/') ? filePath.substring(4) : filePath;
+    final relativePath = filePath.startsWith('lib/')
+        ? filePath.substring(4)
+        : filePath;
 
     // If include patterns are set, file must match at least one
     if (cfg.includePatterns.isNotEmpty) {
-      final included = cfg.includePatterns
-          .any((pattern) => _matchesPattern(relativePath, pattern));
+      final included = cfg.includePatterns.any(
+        (pattern) => _matchesPattern(relativePath, pattern),
+      );
       if (!included) return false;
     }
 
     // Exclude patterns filter out matching files
-    if (cfg.excludePatterns
-        .any((pattern) => _matchesPattern(relativePath, pattern))) {
+    if (cfg.excludePatterns.any(
+      (pattern) => _matchesPattern(relativePath, pattern),
+    )) {
       return false;
     }
 
@@ -198,11 +203,11 @@ Future<void> runCoverageWorkaround([CoverageWorkaroundConfig? config]) async {
 
   // 6. Generate sorted package imports
   final imports = filteredFiles.map((filePath) {
-    final relativePath =
-        filePath.startsWith('lib/') ? filePath.substring(4) : filePath;
+    final relativePath = filePath.startsWith('lib/')
+        ? filePath.substring(4)
+        : filePath;
     return "import 'package:$packageName/$relativePath';";
-  }).toList()
-    ..sort();
+  }).toList()..sort();
 
   // 7. Build output content
   final buffer = StringBuffer()
@@ -232,8 +237,7 @@ Future<void> runCoverageWorkaround([CoverageWorkaroundConfig? config]) async {
 
 /// Checks if a pubspec.yaml content contains a Flutter SDK dependency.
 bool _hasFlutterDependency(String pubspecContent) {
-  return RegExp(r'^\s+flutter:\s*$', multiLine: true)
-      .hasMatch(pubspecContent);
+  return RegExp(r'^\s+flutter:\s*$', multiLine: true).hasMatch(pubspecContent);
 }
 
 /// Checks if a line should be filtered out from coverage reports.
@@ -518,7 +522,7 @@ double _calculateTotalCoverageValue(_CoverageData coverageData) {
 /// Example:
 /// ```dart
 /// final config = BuggyConfig(
-///   excludePattern: '**/test/**',
+///   excludePatterns: ['**/test/**'],
 ///   uncoveredOnly: true,
 /// );
 /// final filtered = _applyFilters(rawData, config);
@@ -531,9 +535,10 @@ _CoverageData _applyFilters(_CoverageData coverageData, BuggyConfig config) {
     final fileData = entry.value;
     final uncoveredLines = fileData['uncoveredLines'] as List<int>;
 
-    // Apply exclude pattern filter
-    if (config.excludePattern != null &&
-        _matchesPattern(filePath, config.excludePattern!)) {
+    // Apply exclude patterns filter
+    if (config.excludePatterns.any(
+      (pattern) => _matchesPattern(filePath, pattern),
+    )) {
       continue;
     }
 
