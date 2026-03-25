@@ -27,7 +27,8 @@ ArgParser buildParser() {
       help: 'Show additional command output.',
     )
     ..addFlag('version', negatable: false, help: 'Print the tool version.')
-    ..addCommand('report', _buildReportParser());
+    ..addCommand('report', _buildReportParser())
+    ..addCommand('run', _buildRunParser());
 
   return parser;
 }
@@ -84,6 +85,42 @@ ArgParser _buildReportParser() {
     );
 }
 
+/// Builds the argument parser for the 'run' command.
+///
+/// The 'run' command is a general-purpose parent command for utility
+/// subcommands.
+ArgParser _buildRunParser() {
+  return ArgParser()
+    ..addFlag(
+      'help',
+      abbr: 'h',
+      negatable: false,
+      help: 'Print help for the run command.',
+    )
+    ..addCommand(
+      'flutter-test-coverage-workaround',
+      _buildFlutterTestCoverageWorkaroundParser(),
+    );
+}
+
+/// Builds the argument parser for the 'flutter-test-coverage-workaround'
+/// subcommand.
+ArgParser _buildFlutterTestCoverageWorkaroundParser() {
+  return ArgParser()
+    ..addFlag(
+      'help',
+      abbr: 'h',
+      negatable: false,
+      help: 'Print help for this command.',
+    )
+    ..addMultiOption(
+      'exclude',
+      abbr: 'e',
+      help: 'Exclude files matching pattern (glob). '
+          'Can be specified multiple times.',
+    );
+}
+
 /// Prints usage information for the command line tool.
 ///
 /// Shows the command syntax and all available commands with their descriptions.
@@ -97,6 +134,7 @@ void printUsage(ArgParser argParser) {
   print('');
   print('Available commands:');
   print('  report    Generate coverage report from LCOV file');
+  print('  run       Run utility commands');
   print('');
   print('Run "buggy <command> --help" for more information about a command.');
 }
@@ -113,6 +151,42 @@ void printReportUsage(ArgParser reportParser) {
   print('');
   print('Options:');
   print(reportParser.usage);
+}
+
+/// Prints usage information for the run command.
+void printRunUsage(ArgParser runParser) {
+  print('Usage: buggy run <subcommand> [arguments]');
+  print('');
+  print('Run various utility commands.');
+  print('');
+  print('Options:');
+  print(runParser.usage);
+  print('');
+  print('Available subcommands:');
+  print(
+    '  flutter-test-coverage-workaround    '
+    'Generate a test file that imports all lib files for complete coverage',
+  );
+  print('');
+  print('Run "buggy run <subcommand> --help" for more information.');
+}
+
+/// Prints usage information for the flutter-test-coverage-workaround command.
+void printFlutterTestCoverageWorkaroundUsage(ArgParser parser) {
+  print('Usage: buggy run flutter-test-coverage-workaround [options]');
+  print('');
+  print('Generate a test file that imports all lib/ files,');
+  print("forcing Flutter's coverage to track them.");
+  print('');
+  print(
+    'Must be run from a Flutter project root '
+    '(pubspec.yaml with flutter dependency).',
+  );
+  print('');
+  print('Output: test/src/.buggy/coverage_fix_test.dart');
+  print('');
+  print('Options:');
+  print(parser.usage);
 }
 
 /// Prints the current version of the Buggy tool.
@@ -179,12 +253,81 @@ Future<void> _handleReportCommand(List<String> arguments, bool verbose) async {
   }
 }
 
+/// Handles the 'run' command by dispatching to the appropriate subcommand.
+Future<void> _handleRunCommand(List<String> arguments, bool verbose) async {
+  final runParser = _buildRunParser();
+
+  try {
+    final results = runParser.parse(arguments);
+
+    if (results.flag('help') || results.command == null) {
+      printRunUsage(runParser);
+      return;
+    }
+
+    switch (results.command!.name) {
+      case 'flutter-test-coverage-workaround':
+        await _handleFlutterTestCoverageWorkaround(
+          results.command!.arguments,
+          verbose,
+        );
+      default:
+        stderr.writeln(
+          'Error: Unknown run subcommand "${results.command!.name}"',
+        );
+        printRunUsage(runParser);
+        exit(1);
+    }
+  } on FormatException catch (e) {
+    stderr.writeln('Error: ${e.message}');
+    print('');
+    printRunUsage(runParser);
+    exit(1);
+  }
+}
+
+/// Handles the 'flutter-test-coverage-workaround' subcommand execution.
+Future<void> _handleFlutterTestCoverageWorkaround(
+  List<String> arguments,
+  bool verbose,
+) async {
+  final parser = _buildFlutterTestCoverageWorkaroundParser();
+
+  try {
+    final results = parser.parse(arguments);
+
+    if (results.flag('help')) {
+      printFlutterTestCoverageWorkaroundUsage(parser);
+      return;
+    }
+
+    if (verbose) {
+      print(
+        '[VERBOSE] flutter-test-coverage-workaround arguments: $arguments',
+      );
+    }
+
+    final excludePatterns = results.multiOption('exclude');
+
+    final config = buggy.CoverageWorkaroundConfig(
+      excludePatterns: excludePatterns,
+    );
+
+    await buggy.runCoverageWorkaround(config);
+  } on FormatException catch (e) {
+    stderr.writeln('Error: ${e.message}');
+    print('');
+    printFlutterTestCoverageWorkaroundUsage(parser);
+    exit(1);
+  }
+}
+
 /// Main entry point for the Buggy command line tool.
 ///
 /// Parses command line arguments and executes the appropriate command.
 /// Uses a strict command-based architecture with the following structure:
 /// - Global flags: help, version, verbose
-/// - Commands: report (generate coverage reports)
+/// - Commands: report (generate coverage reports), run (utility commands)
 ///
 /// [arguments]: Command line arguments to parse.
 ///
@@ -239,6 +382,8 @@ Future<void> main(List<String> arguments) async {
     switch (results.command!.name) {
       case 'report':
         await _handleReportCommand(results.command!.arguments, verbose);
+      case 'run':
+        await _handleRunCommand(results.command!.arguments, verbose);
       default:
         stderr.writeln('Error: Unknown command "${results.command!.name}"');
         printUsage(argParser);

@@ -21,8 +21,11 @@ Buggy is a Dart CLI tool that parses LCOV coverage files and generates clean, AI
 # Get dependencies
 fvm dart pub get
 
-# Run the tool locally
+# Run report locally
 fvm dart run bin/buggy.dart report --input coverage/lcov.info
+
+# Generate Flutter coverage workaround (run from a Flutter project root)
+fvm dart run bin/buggy.dart run flutter-test-coverage-workaround
 
 # Analyze (uses very_good_analysis rules)
 fvm dart analyze
@@ -41,11 +44,18 @@ FVM is configured (Flutter 3.41.0) via `.fvmrc`.
 
 ## Architecture
 
-All core logic lives in a single file: `lib/buggy.dart`. It exports `BuggyConfig` (configuration class) and `run()` (entry point that reads LCOV, filters, generates markdown, and outputs the report).
+All core logic lives in a single file: `lib/buggy.dart`. It exports:
+- `BuggyConfig` + `run()` — report generation (reads LCOV, filters, generates markdown)
+- `CoverageWorkaroundConfig` + `runCoverageWorkaround()` — Flutter coverage workaround (scans lib/, generates test file importing all files)
 
-`bin/buggy.dart` is the CLI entry point. It uses `package:args` to parse commands and flags, then delegates to `buggy.run()` with a constructed `BuggyConfig`.
+`bin/buggy.dart` is the CLI entry point. It uses `package:args` to parse commands and flags. Commands:
+- `report` — generate coverage report from LCOV file
+- `run` — general-purpose parent command for utility subcommands
+  - `flutter-test-coverage-workaround` — generates `test/src/.buggy/coverage_fix_test.dart` that imports all `lib/` files, fixing Flutter's coverage blind spot for unimported files
 
 The `example/` directory is a standalone Dart project with intentionally partial test coverage, used to demonstrate Buggy's output.
+
+The `example_flutter/` directory is a standalone Flutter project (no widgets, uses `ChangeNotifier`/`ValueNotifier`) with intentionally partial coverage, used to demonstrate the Flutter coverage workaround.
 
 ## Lint Rules
 

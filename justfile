@@ -27,6 +27,10 @@ test-and-report-example:
     cd {{example}} && buggy report
 
 test-and-report-example-flutter:
+    cd {{example_flutter}} && fvm dart run ../bin/buggy.dart run flutter-test-coverage-workaround
+    @echo ""
+    @echo "---"
+    @echo ""
     cd {{example_flutter}} && fvm flutter test --coverage
     @echo ""
     @echo "---"

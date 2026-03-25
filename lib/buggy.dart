@@ -82,6 +82,127 @@ class BuggyConfig {
   final bool noFilter;
 }
 
+/// Configuration for the Flutter test coverage workaround command.
+///
+/// Defines options for generating a test file that imports all `lib/` files,
+/// forcing Flutter's coverage tooling to track them.
+class CoverageWorkaroundConfig {
+  /// Creates a new coverage workaround configuration.
+  const CoverageWorkaroundConfig({
+    this.excludePatterns = const [],
+  });
+
+  /// Glob patterns to exclude files from the generated import list.
+  ///
+  /// Example: `['*.g.dart', '*.freezed.dart']`
+  final List<String> excludePatterns;
+}
+
+/// Generates a test file that imports all `lib/` files in a Flutter project.
+///
+/// This works around Flutter's `flutter test --coverage` limitation where
+/// only files imported by test files appear in coverage data. Files that are
+/// never imported are invisible to coverage, silently hiding untested code.
+///
+/// Must be run from a Flutter project root (directory with `pubspec.yaml`
+/// containing a `flutter` dependency).
+///
+/// The generated file is written to `test/src/.buggy/coverage_fix_test.dart`.
+Future<void> runCoverageWorkaround([CoverageWorkaroundConfig? config]) async {
+  final cfg = config ?? const CoverageWorkaroundConfig();
+
+  // 1. Validate pubspec.yaml exists
+  final pubspecFile = File('pubspec.yaml');
+  if (!pubspecFile.existsSync()) {
+    stderr.writeln(
+      'Error: pubspec.yaml not found. '
+      'Run this command from a Flutter project root.',
+    );
+    exit(1);
+  }
+
+  // 2. Read and parse pubspec.yaml
+  final pubspecContent = await pubspecFile.readAsString();
+
+  final nameMatch =
+      RegExp(r'^name:\s*(.+)$', multiLine: true).firstMatch(pubspecContent);
+  if (nameMatch == null) {
+    stderr.writeln('Error: Could not find "name:" field in pubspec.yaml.');
+    exit(1);
+  }
+  final packageName = nameMatch.group(1)!.trim();
+
+  // 3. Validate Flutter dependency
+  if (!_hasFlutterDependency(pubspecContent)) {
+    stderr.writeln(
+      'Error: This does not appear to be a Flutter project. '
+      'No flutter dependency found in pubspec.yaml.',
+    );
+    exit(1);
+  }
+
+  // 4. Scan lib/ directory
+  final libDir = Directory('lib');
+  if (!libDir.existsSync()) {
+    stderr.writeln('Error: lib/ directory not found.');
+    exit(1);
+  }
+
+  final dartFiles = libDir
+      .listSync(recursive: true)
+      .whereType<File>()
+      .where((f) => f.path.endsWith('.dart'))
+      .map((f) => f.path.replaceAll(r'\', '/'))
+      .toList();
+
+  // 5. Filter exclusions
+  final filteredFiles = dartFiles.where((filePath) {
+    final relativePath =
+        filePath.startsWith('lib/') ? filePath.substring(4) : filePath;
+    return !cfg.excludePatterns
+        .any((pattern) => _matchesPattern(relativePath, pattern));
+  }).toList();
+
+  // 6. Generate sorted package imports
+  final imports = filteredFiles.map((filePath) {
+    final relativePath =
+        filePath.startsWith('lib/') ? filePath.substring(4) : filePath;
+    return "import 'package:$packageName/$relativePath';";
+  }).toList()
+    ..sort();
+
+  // 7. Build output content
+  final buffer = StringBuffer()
+    ..writeln('// GENERATED CODE - DO NOT MODIFY BY HAND')
+    ..writeln()
+    ..writeln("import 'package:flutter_test/flutter_test.dart';");
+
+  for (final import_ in imports) {
+    buffer.writeln(import_);
+  }
+
+  buffer
+    ..writeln()
+    ..writeln('void main() {')
+    ..writeln("  group('Buggy Coverage Fix', () {")
+    ..writeln('  });')
+    ..writeln('}')
+    ..writeln();
+
+  // 8. Write file
+  final outputFile = File('test/src/.buggy/coverage_fix_test.dart');
+  await outputFile.parent.create(recursive: true);
+  await outputFile.writeAsString(buffer.toString());
+
+  print('Generated ${outputFile.path} with ${imports.length} imports.');
+}
+
+/// Checks if a pubspec.yaml content contains a Flutter SDK dependency.
+bool _hasFlutterDependency(String pubspecContent) {
+  return RegExp(r'^\s+flutter:\s*$', multiLine: true)
+      .hasMatch(pubspecContent);
+}
+
 /// Checks if a line should be filtered out from coverage reports.
 ///
 /// Filters out common "useless" lines that don't provide meaningful coverage
