@@ -170,7 +170,8 @@ Future<void> runCoverageWorkaround([CoverageWorkaroundConfig? config]) async {
       .map((f) => f.path.replaceAll(r'\', '/'))
       .toList();
 
-  // 5. Filter by include/exclude patterns
+  // 5. Filter by include/exclude patterns and skip `part of` files
+  final partOfPattern = RegExp(r'^\s*part\s+of\s+', multiLine: true);
   final filteredFiles = dartFiles.where((filePath) {
     final relativePath =
         filePath.startsWith('lib/') ? filePath.substring(4) : filePath;
@@ -183,8 +184,16 @@ Future<void> runCoverageWorkaround([CoverageWorkaroundConfig? config]) async {
     }
 
     // Exclude patterns filter out matching files
-    return !cfg.excludePatterns
-        .any((pattern) => _matchesPattern(relativePath, pattern));
+    if (cfg.excludePatterns
+        .any((pattern) => _matchesPattern(relativePath, pattern))) {
+      return false;
+    }
+
+    // Skip files that are `part of` another library
+    final content = File(filePath).readAsStringSync();
+    if (partOfPattern.hasMatch(content)) return false;
+
+    return true;
   }).toList();
 
   // 6. Generate sorted package imports

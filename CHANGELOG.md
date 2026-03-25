@@ -1,3 +1,7 @@
+## 1.1.1
+
+- Fixed `flutter-test-coverage-workaround` to skip files with `part of` directives, which cannot be imported directly.
+
 ## 1.1.0
 
 - Added `run` command as a general-purpose parent for utility subcommands.

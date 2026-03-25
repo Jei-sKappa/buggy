@@ -1,6 +1,7 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:example_flutter/src/animals/animal.dart';
 import 'package:example_flutter/src/counter/counter.dart';
 import 'package:example_flutter/src/counter/counter_notifier.dart';
 import 'package:example_flutter/src/settings/settings.dart';
