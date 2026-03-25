@@ -153,14 +153,19 @@ buggy report --no-filter
 
 ### Example Workflow
 
-1. Run your tests with coverage:
+1. Install the `coverage` package globally (if you haven't already):
+```bash
+dart pub global activate coverage
+```
+
+2. Run your tests with coverage:
 ```bash
 dart test --coverage=coverage
 ```
 
-2. Generate LCOV report:
+3. Generate LCOV report:
 ```bash
-dart run coverage:format_coverage \
+dart pub global run coverage:format_coverage \
   --lcov \
   --in=coverage \
   --out=coverage/lcov.info \
@@ -168,7 +173,7 @@ dart run coverage:format_coverage \
   --report-on=lib
 ```
 
-3. Generate beautiful Markdown report:
+4. Generate beautiful Markdown report:
 ```bash
 buggy report
 ```
