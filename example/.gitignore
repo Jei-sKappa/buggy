@@ -6,8 +6,5 @@
 ## Ignore example_todos.json
 example_todos.json
 
-## Ignore coverage test directory
-coverage/test
-
-## Ignore coverage html directory
-coverage/html
+## Ignore coverage
+coverage
