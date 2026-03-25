@@ -51,7 +51,7 @@ All core logic lives in a single file: `lib/buggy.dart`. It exports:
 `bin/buggy.dart` is the CLI entry point. It uses `package:args` to parse commands and flags. Commands:
 - `report` — generate coverage report from LCOV file
 - `run` — general-purpose parent command for utility subcommands
-  - `flutter-test-coverage-workaround` — generates `<target>/src/.buggy/coverage_fix_test.dart` (target: `test` or `integration_test`) that imports all `lib/` files, fixing Flutter's coverage blind spot for unimported files
+  - `flutter-test-coverage-workaround` — generates `<target>/.buggy/coverage_fix_test.dart` (target: `test` or `integration_test`) that imports all `lib/` files, fixing Flutter's coverage blind spot for unimported files
 
 The `example/` directory is a standalone Dart project with intentionally partial test coverage, used to demonstrate Buggy's output.
 

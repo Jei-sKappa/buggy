@@ -121,7 +121,7 @@ class CoverageWorkaroundConfig {
 /// Must be run from a Flutter project root (directory with `pubspec.yaml`
 /// containing a `flutter` dependency).
 ///
-/// The generated file is written to `<target>/src/.buggy/coverage_fix_test.dart`,
+/// The generated file is written to `<target>/.buggy/coverage_fix_test.dart`,
 /// where `<target>` is `test` (default) or `integration_test`.
 Future<void> runCoverageWorkaround([CoverageWorkaroundConfig? config]) async {
   final cfg = config ?? const CoverageWorkaroundConfig();
@@ -228,7 +228,7 @@ Future<void> runCoverageWorkaround([CoverageWorkaroundConfig? config]) async {
     ..writeln();
 
   // 8. Write file
-  final outputFile = File('${cfg.target}/src/.buggy/coverage_fix_test.dart');
+  final outputFile = File('${cfg.target}/.buggy/coverage_fix_test.dart');
   await outputFile.parent.create(recursive: true);
   await outputFile.writeAsString(buffer.toString());
 

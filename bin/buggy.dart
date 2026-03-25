@@ -200,7 +200,7 @@ void printFlutterTestCoverageWorkaroundUsage(ArgParser parser) {
     '(pubspec.yaml with flutter dependency).',
   );
   print('');
-  print('Output: <target>/src/.buggy/coverage_fix_test.dart');
+  print('Output: <target>/.buggy/coverage_fix_test.dart');
   print('');
   print('Options:');
   print(parser.usage);

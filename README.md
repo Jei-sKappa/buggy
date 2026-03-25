@@ -227,7 +227,7 @@ This command generates a test file that imports all `lib/` files, forcing Flutte
 buggy run flutter-test-coverage-workaround
 ```
 
-This creates `test/src/.buggy/coverage_fix_test.dart` with imports for every Dart file under `lib/`.
+This creates `test/.buggy/coverage_fix_test.dart` with imports for every Dart file under `lib/`.
 
 #### `--target`
 
