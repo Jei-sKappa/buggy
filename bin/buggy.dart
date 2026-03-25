@@ -3,7 +3,7 @@ import 'package:args/args.dart';
 import 'package:buggy/buggy.dart' as buggy;
 
 /// Current version of the Buggy tool.
-const String version = '1.0.0';
+const String version = '1.1.0';
 
 /// Builds and configures the main command line argument parser.
 ///

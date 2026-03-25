@@ -1,6 +1,6 @@
 name: buggy
 description: Generates clean, readable, AI-ready Markdown reports from LCOV coverage files.
-version: 1.0.0
+version: 1.1.0
 repository: https://github.com/Jei-sKappa/buggy
 
 environment:

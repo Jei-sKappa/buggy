@@ -46,6 +46,7 @@ Global options:
 
 Available commands:
   report    Generate coverage report from LCOV file
+  run       Run utility commands
 
 Run "buggy <command> --help" for more information about a command.
 ```
@@ -209,6 +210,64 @@ Buggy generates clean, professional coverage reports like this:
   17:   User copyWith({String? id, String? name}) {
   18:     return User(id: id ?? this.id, name: name ?? this.name);
 ​```
+```
+
+## Commands: `run`
+
+The `run` command is a parent for utility subcommands.
+
+### `flutter-test-coverage-workaround`
+
+Flutter's `flutter test --coverage` only includes files in `lcov.info` that are imported by test files. Files that are never imported don't appear in coverage at all, silently hiding untested code.
+
+This command generates a test file that imports all `lib/` files, forcing Flutter's coverage tooling to track them.
+
+```bash
+# Must be run from a Flutter project root
+buggy run flutter-test-coverage-workaround
+```
+
+This creates `test/src/.buggy/coverage_fix_test.dart` with imports for every Dart file under `lib/`.
+
+#### `--target`
+
+Choose the output directory. Defaults to `test`.
+
+```bash
+buggy run flutter-test-coverage-workaround --target integration_test
+```
+
+#### `--include`
+
+Include only files matching glob patterns. Can be specified multiple times.
+
+```bash
+buggy run flutter-test-coverage-workaround --include "src/models/*" --include "src/services/*"
+```
+
+#### `--exclude`
+
+Exclude files matching glob patterns. Can be specified multiple times. Applied after `--include`.
+
+```bash
+buggy run flutter-test-coverage-workaround --exclude "*.g.dart" --exclude "*.freezed.dart"
+```
+
+### Example Flutter Workflow
+
+1. Generate the coverage fix file:
+```bash
+buggy run flutter-test-coverage-workaround
+```
+
+2. Run tests with coverage:
+```bash
+flutter test --coverage
+```
+
+3. Generate the report:
+```bash
+buggy report
 ```
 
 ## Integration
