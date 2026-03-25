@@ -118,6 +118,13 @@ ArgParser _buildFlutterTestCoverageWorkaroundParser() {
       abbr: 'e',
       help: 'Exclude files matching pattern (glob). '
           'Can be specified multiple times.',
+    )
+    ..addOption(
+      'target',
+      abbr: 't',
+      help: 'Target test directory.',
+      allowed: ['test', 'integration_test'],
+      defaultsTo: 'test',
     );
 }
 
@@ -183,7 +190,7 @@ void printFlutterTestCoverageWorkaroundUsage(ArgParser parser) {
     '(pubspec.yaml with flutter dependency).',
   );
   print('');
-  print('Output: test/src/.buggy/coverage_fix_test.dart');
+  print('Output: <target>/src/.buggy/coverage_fix_test.dart');
   print('');
   print('Options:');
   print(parser.usage);
@@ -311,6 +318,7 @@ Future<void> _handleFlutterTestCoverageWorkaround(
 
     final config = buggy.CoverageWorkaroundConfig(
       excludePatterns: excludePatterns,
+      target: results.option('target')!,
     );
 
     await buggy.runCoverageWorkaround(config);

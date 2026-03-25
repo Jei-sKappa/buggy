@@ -90,12 +90,19 @@ class CoverageWorkaroundConfig {
   /// Creates a new coverage workaround configuration.
   const CoverageWorkaroundConfig({
     this.excludePatterns = const [],
+    this.target = 'test',
   });
 
   /// Glob patterns to exclude files from the generated import list.
   ///
   /// Example: `['*.g.dart', '*.freezed.dart']`
   final List<String> excludePatterns;
+
+  /// Target test directory for the generated file.
+  ///
+  /// Must be `'test'` or `'integration_test'`.
+  /// Defaults to `'test'`.
+  final String target;
 }
 
 /// Generates a test file that imports all `lib/` files in a Flutter project.
@@ -107,7 +114,8 @@ class CoverageWorkaroundConfig {
 /// Must be run from a Flutter project root (directory with `pubspec.yaml`
 /// containing a `flutter` dependency).
 ///
-/// The generated file is written to `test/src/.buggy/coverage_fix_test.dart`.
+/// The generated file is written to `<target>/src/.buggy/coverage_fix_test.dart`,
+/// where `<target>` is `test` (default) or `integration_test`.
 Future<void> runCoverageWorkaround([CoverageWorkaroundConfig? config]) async {
   final cfg = config ?? const CoverageWorkaroundConfig();
 
@@ -190,7 +198,7 @@ Future<void> runCoverageWorkaround([CoverageWorkaroundConfig? config]) async {
     ..writeln();
 
   // 8. Write file
-  final outputFile = File('test/src/.buggy/coverage_fix_test.dart');
+  final outputFile = File('${cfg.target}/src/.buggy/coverage_fix_test.dart');
   await outputFile.parent.create(recursive: true);
   await outputFile.writeAsString(buffer.toString());
 
