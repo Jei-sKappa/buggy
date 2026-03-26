@@ -2,6 +2,8 @@
 
 - **Breaking:** `BuggyConfig.excludePattern` (`String?`) replaced with `excludePatterns` (`List<String>`).
 - `report --exclude` (`-e`) now accepts multiple patterns (e.g., `--exclude "**/test/**" --exclude "*.g.dart"`).
+- Added `report --exclude-line` to exclude specific lines from coverage by `file_path:line_number:line_content`, with validation errors for missing files, out-of-range lines, content mismatches, and non-uncovered targets.
+- Added config file support (`buggy.yaml` / `buggy.yml`) with named presets for any command via `--preset` (`-p`).
 - Changed `flutter-test-coverage-workaround` output path from `<target>/src/.buggy/` to `<target>/.buggy/`.
 - Fixed `-v` flag to print version instead of enabling verbose mode.
 

@@ -15,8 +15,10 @@ Transform messy LCOV output into gorgeous Markdown reports that are perfect for 
 - 🎨 **Syntax Highlighting**: Language-specific code blocks with proper highlighting
 - 📊 **Flexible Reporting**: Summary mode, detailed reports, or uncovered-only views
 - 🚫 **Pattern Exclusion**: Exclude files using glob patterns (test files, generated code, etc.)
+- 🔬 **Line-Level Exclusion**: Exclude specific lines from coverage with content verification
 - 📈 **Coverage Thresholds**: Fail builds when coverage drops below specified thresholds
 - 🗂️ **Smart Grouping**: Groups consecutive uncovered lines into logical code blocks
+- ⚙️ **Config File Presets**: Define reusable named presets in `buggy.yaml` for any command
 
 ## Installation
 
@@ -65,11 +67,13 @@ Options:
 -i, --input             Input LCOV file path (default: coverage/lcov.info)
                         (defaults to "coverage/lcov.info")
 -o, --output            Output file path (default: stdout)
--e, --exclude           Exclude files matching pattern (glob)
+-e, --exclude           Exclude files matching pattern (glob). Can be specified multiple times.
+    --exclude-line      Exclude specific lines from coverage. Format: file_path:line_number:line_content. Can be specified multiple times.
 -f, --fail-under        Exit with error if coverage below threshold (percentage)
 -s, --summary           Show summary with individual file coverage
     --uncovered-only    Show only files with uncovered lines
     --no-filter         Disable filtering of common useless lines (@override, braces, etc.)
+-p, --preset            Use a named preset from buggy.yaml.
 ```
 
 ### `--input`
@@ -92,11 +96,12 @@ buggy report -o docs/coverage.md
 
 ### `--exclude`
 
-Excludes files from the coverage report using glob patterns. This is useful for filtering out test files, generated code, or other files you don't want to include in coverage analysis.
+Excludes files from the coverage report using glob patterns. Can be specified multiple times to exclude multiple patterns. This is useful for filtering out test files, generated code, or other files you don't want to include in coverage analysis.
 
 ```bash
 buggy report --exclude "**/test/**"
 buggy report -e "**/*.g.dart"
+buggy report --exclude "**/test/**" --exclude "**/*.g.dart" --exclude "**/generated/**"
 ```
 
 Common patterns:
@@ -104,6 +109,25 @@ Common patterns:
 - `**/*_test.dart` - Exclude all test files
 - `**/*.g.dart` - Exclude generated Dart files
 - `**/generated/**` - Exclude generated code directories
+
+### `--exclude-line`
+
+Excludes specific lines from coverage calculations. This is useful when certain lines are intentionally uncovered (e.g., debug helpers, platform-specific code) and you don't want them to affect your coverage percentage.
+
+Format: `file_path:line_number:line_content`
+
+All three parts are required. The line content is verified against the actual source file to prevent stale exclusions.
+
+```bash
+buggy report --exclude-line "lib/user.dart:45:String customFormat() {"
+buggy report --exclude-line "lib/user.dart:45:String customFormat() {" --exclude-line "lib/user.dart:46:return 'hello';"
+```
+
+Buggy validates each `--exclude-line` entry and exits with an error if:
+- The file does not exist
+- The line number is out of range
+- The content does not match the actual source line
+- The target line is not an uncovered line
 
 ### `--fail-under`
 
@@ -151,6 +175,18 @@ Disables Buggy's smart filtering of common "useless" lines. By default, Buggy fi
 ```bash
 buggy report --no-filter
 ```
+
+### `--preset`
+
+Loads a named preset from a `buggy.yaml` config file in the current directory. Preset values are applied first, so CLI flags override single-value options and accumulate with multi-options like `--exclude`.
+
+```bash
+buggy report --preset ci
+buggy report -p ci
+buggy report --preset ci --exclude "**/extra/**"
+```
+
+See [Config File](#config-file-buggyyaml) for details on defining presets.
 
 ### Example Workflow
 
@@ -253,6 +289,14 @@ Exclude files matching glob patterns. Can be specified multiple times. Applied a
 buggy run flutter-test-coverage-workaround --exclude "*.g.dart" --exclude "*.freezed.dart"
 ```
 
+#### `--preset`
+
+Loads a named preset from `buggy.yaml`. See [Config File](#config-file-buggyyaml).
+
+```bash
+buggy run flutter-test-coverage-workaround --preset default
+```
+
 ### Example Flutter Workflow
 
 1. Generate the coverage fix file:
@@ -269,6 +313,65 @@ flutter test --coverage
 ```bash
 buggy report
 ```
+
+## Config File (`buggy.yaml`)
+
+Create a `buggy.yaml` (or `buggy.yml`) in your project root to define reusable named presets for any command. Presets are selected with `--preset <name>` (or `-p <name>`).
+
+YAML keys match CLI option names exactly. Nested commands use nested YAML objects.
+
+### Example
+
+```yaml
+commands:
+  report:
+    presets:
+      - name: ci
+        fail-under: 80
+        summary: true
+        exclude:
+          - "*.g.dart"
+          - "*.freezed.dart"
+      - name: full
+        no-filter: true
+      - name: custom
+        exclude:
+          - "**/todo.dart"
+        exclude-line:
+          - "lib/user.dart:45:String customFormat() {"
+          - "lib/user.dart:46:return 'hello';"
+  run:
+    flutter-test-coverage-workaround:
+      presets:
+        - name: default
+          exclude:
+            - "*.g.dart"
+            - "*.freezed.dart"
+          target: test
+```
+
+### Usage
+
+```bash
+# Use the "ci" preset for report
+buggy report --preset ci
+
+# CLI flags override single-value preset options
+buggy report --preset ci --fail-under 90
+
+# CLI flags accumulate with multi-value preset options
+buggy report --preset ci --exclude "**/extra/**"
+
+# Use a preset for flutter-test-coverage-workaround
+buggy run flutter-test-coverage-workaround --preset default
+```
+
+### How presets work
+
+Preset values are prepended as synthetic CLI arguments before the actual arguments you pass. This means:
+- **Single-value options** (e.g., `--fail-under`, `--input`): CLI flags override preset values.
+- **Multi-value options** (e.g., `--exclude`, `--exclude-line`): CLI flags accumulate with preset values.
+- **Flags** (e.g., `--summary`, `--no-filter`): Preset sets the flag; CLI cannot unset it (flags are non-negatable).
 
 ## Integration
 
