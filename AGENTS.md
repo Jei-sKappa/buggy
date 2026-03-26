@@ -21,6 +21,9 @@ Buggy is a Dart CLI tool that parses LCOV coverage files and generates clean, AI
 # Get dependencies
 fvm dart pub get
 
+# Regenerate version from pubspec.yaml (after version bumps)
+fvm dart run build_runner build --delete-conflicting-outputs
+
 # Run report locally
 fvm dart run bin/buggy.dart report --input coverage/lcov.info
 

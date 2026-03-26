@@ -2,9 +2,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:buggy/commands/report/parser.dart' as report;
 import 'package:buggy/commands/run/parser.dart' as run_cmd;
-
-/// Current version of the Buggy tool.
-const String version = '1.2.0';
+import 'package:buggy/pubspec.yaml.g.dart';
 
 /// Builds and configures the main command line argument parser.
 ///
@@ -58,7 +56,7 @@ void printUsage(ArgParser argParser) {
 
 /// Prints the current version of the Buggy tool.
 void printVersion() {
-  print('buggy version: $version');
+  print('buggy version: ${Pubspec.version.representation}');
 }
 
 /// Main entry point for the Buggy command line tool.
