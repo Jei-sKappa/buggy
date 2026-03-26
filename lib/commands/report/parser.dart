@@ -34,6 +34,14 @@ ArgParser buildParser() {
           'Exclude files matching pattern (glob). '
           'Can be specified multiple times.',
     )
+    ..addMultiOption(
+      'exclude-line',
+      splitCommas: false,
+      help:
+          'Exclude specific lines from coverage. '
+          'Format: file_path:line_number:line_content. '
+          'Can be specified multiple times.',
+    )
     ..addOption(
       'fail-under',
       abbr: 'f',
@@ -135,6 +143,7 @@ Future<void> handleCommand(
       inputPath: results.option('input')!,
       outputPath: results.option('output'),
       excludePatterns: results.multiOption('exclude'),
+      excludeLinePatterns: results.multiOption('exclude-line'),
       uncoveredOnly: results.flag('uncovered-only'),
       failUnder: failUnder,
       summary: results.flag('summary'),

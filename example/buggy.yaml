@@ -9,6 +9,33 @@ commands:
           - "*.freezed.dart"
       - name: full
         no-filter: true
+      - name: exclude-custom-format-lines
+        exclude:
+          - "**/todo.dart"
+          - "**/todo_manager.dart"
+        exclude-line:
+          # customFormat()
+          - "lib/user.dart:45:String customFormat() {"
+          - "lib/user.dart:46:return 'The user is $name with id $id';"
+          # customFormat1()
+          - "lib/user.dart:49:String customFormat1() {"
+          - 'lib/user.dart:50:return "The user is $name with id $id";'
+          # customFormat2()
+          - "lib/user.dart:53:String customFormat2() {"
+          - 'lib/user.dart:54:return "The user is called \"${name.toUpperCase()}\""'
+          - 'lib/user.dart:55:" and has id \"${id.toUpperCase()}\"";'
+          # customFormat3()
+          - "lib/user.dart:58:String customFormat3() {"
+          - "lib/user.dart:59:return 'The user is called \\'${name.toUpperCase()}\\' and '"
+          - "lib/user.dart:60:'has id \\'${id.toUpperCase()}\\'';"
+          # customFormat4()
+          - "lib/user.dart:63:String customFormat4() {"
+          - 'lib/user.dart:64:return "The user is called ''${name.toUpperCase()}'' "'
+          - 'lib/user.dart:65:"and has id ''${id.toUpperCase()}''";'
+          # customFormat5()
+          - "lib/user.dart:68:String customFormat5() {"
+          - "lib/user.dart:69:return 'The user is called \"${name.toUpperCase()}\" '"
+          - "lib/user.dart:70:'and has id \"${id.toUpperCase()}\"';"
   run:
     flutter-test-coverage-workaround:
       presets:

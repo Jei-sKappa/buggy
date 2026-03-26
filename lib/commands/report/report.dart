@@ -10,6 +10,15 @@ import 'package:buggy/utils/glob_matching.dart';
 /// - `uncoveredLines`: List of uncovered line numbers
 typedef _CoverageData = Map<String, Map<String, dynamic>>;
 
+/// A parsed exclude-line entry.
+class _ExcludeLineEntry {
+  _ExcludeLineEntry(this.filePath, this.lineNumber, this.content);
+
+  final String filePath;
+  final int lineNumber;
+  final String content;
+}
+
 /// Configuration class for the Buggy.
 ///
 /// Defines all the settings and options for generating coverage reports.
@@ -34,6 +43,7 @@ class ReportConfig {
     this.inputPath = 'coverage/lcov.info',
     this.outputPath,
     this.excludePatterns = const [],
+    this.excludeLinePatterns = const [],
     this.uncoveredOnly = false,
     this.failUnder,
     this.summary = false,
@@ -57,6 +67,14 @@ class ReportConfig {
   /// - `**/*_test.dart` - Exclude all test files
   /// - `**/generated/**` - Exclude generated code
   final List<String> excludePatterns;
+
+  /// Specific lines to exclude from coverage calculations.
+  ///
+  /// Each entry has format `file_path:line_number:line_content`.
+  /// All three parts are required. The line content is verified against the
+  /// actual source file — if it doesn't match, the exclusion is skipped and
+  /// a warning is printed.
+  final List<String> excludeLinePatterns;
 
   /// Whether to show only files with uncovered lines.
   ///
@@ -352,10 +370,44 @@ bool _shouldFilterLine(String filePath, String lineContent) {
   return false;
 }
 
+/// Parses exclude-line patterns into a list of structured entries.
+///
+/// Each pattern has format `file_path:line_number:line_content`.
+/// All three parts are required. Malformed entries are skipped.
+List<_ExcludeLineEntry> _parseExcludeLinePatterns(List<String> patterns) {
+  final result = <_ExcludeLineEntry>[];
+  for (final pattern in patterns) {
+    final firstColon = pattern.indexOf(':');
+    if (firstColon == -1) continue;
+
+    final filePath = pattern.substring(0, firstColon);
+    final rest = pattern.substring(firstColon + 1);
+
+    final secondColon = rest.indexOf(':');
+    if (secondColon == -1) continue;
+
+    final lineNumber = int.tryParse(rest.substring(0, secondColon));
+    if (lineNumber == null) continue;
+
+    final content = rest.substring(secondColon + 1);
+    result.add(_ExcludeLineEntry(filePath, lineNumber, content.trim()));
+  }
+  return result;
+}
+
+/// Checks if [absolutePath] ends with [relativeSuffix] at a path separator
+/// boundary.
+bool _pathEndsWith(String absolutePath, String relativeSuffix) {
+  if (absolutePath == relativeSuffix) return true;
+  return absolutePath.endsWith('/$relativeSuffix') ||
+      absolutePath.endsWith(r'\' + relativeSuffix);
+}
+
 /// Applies filters to coverage data based on configuration.
 ///
 /// Processes the raw coverage data and applies the following filters:
 /// - **Exclude patterns**: Removes files matching the glob pattern
+/// - **Exclude line patterns**: Removes specific lines from coverage
 /// - **Uncovered only**: Removes files with 100% coverage
 ///
 /// [coverageData]: The raw coverage data to filter.
@@ -373,6 +425,7 @@ bool _shouldFilterLine(String filePath, String lineContent) {
 /// ```
 _CoverageData _applyFilters(_CoverageData coverageData, ReportConfig config) {
   final filtered = <String, Map<String, dynamic>>{};
+  final excludeLines = _parseExcludeLinePatterns(config.excludeLinePatterns);
 
   for (final entry in coverageData.entries) {
     final filePath = entry.key;
@@ -389,6 +442,54 @@ _CoverageData _applyFilters(_CoverageData coverageData, ReportConfig config) {
     // Apply uncovered-only filter
     if (config.uncoveredOnly && uncoveredLines.isEmpty) {
       continue;
+    }
+
+    // Apply line-level exclusions
+    if (excludeLines.isNotEmpty) {
+      final matchingEntries =
+          excludeLines.where((e) => _pathEndsWith(filePath, e.filePath));
+
+      if (matchingEntries.isNotEmpty) {
+        final newUncoveredLines = List<int>.from(uncoveredLines);
+        var totalDecrement = 0;
+
+        // Read source file once for content verification
+        final sourceFile = File(filePath);
+        final sourceLines =
+            sourceFile.existsSync() ? sourceFile.readAsLinesSync() : <String>[];
+
+        for (final exclude in matchingEntries) {
+          if (!newUncoveredLines.contains(exclude.lineNumber)) continue;
+
+          // Verify content matches
+          if (exclude.lineNumber > 0 &&
+              exclude.lineNumber <= sourceLines.length) {
+            final actualContent =
+                sourceLines[exclude.lineNumber - 1].trim();
+            if (actualContent == exclude.content) {
+              newUncoveredLines.remove(exclude.lineNumber);
+              totalDecrement++;
+            } else {
+              stderr
+                ..writeln(
+                  'Warning: --exclude-line content mismatch for '
+                  '${_makeRelativePath(filePath)}:${exclude.lineNumber}',
+                )
+                ..writeln('  Expected: "${exclude.content}"')
+                ..writeln('  Actual:   "$actualContent"');
+            }
+          }
+        }
+
+        if (totalDecrement > 0) {
+          filtered[filePath] = {
+            'total': (fileData['total'] as int) - totalDecrement,
+            'covered': fileData['covered'] as int,
+            'uncoveredLines': newUncoveredLines,
+          };
+          continue;
+        }
+      }
     }
 
     filtered[filePath] = fileData;

@@ -1,3 +1,6 @@
+// ignore-reson: It used to test `"` character escaping in tests
+// ignore_for_file: prefer_single_quotes, avoid_escaping_inner_quotes
+
 import 'package:meta/meta.dart';
 
 /// A model class representing a User
@@ -37,5 +40,33 @@ class User {
   @override
   String toString() {
     return 'User(id: $id, name: $name)';
+  }
+
+  String customFormat() {
+    return 'The user is $name with id $id';
+  }
+
+  String customFormat1() {
+    return "The user is $name with id $id";
+  }
+
+  String customFormat2() {
+    return "The user is called \"${name.toUpperCase()}\""
+        " and has id \"${id.toUpperCase()}\"";
+  }
+
+  String customFormat3() {
+    return 'The user is called \'${name.toUpperCase()}\' and '
+        'has id \'${id.toUpperCase()}\'';
+  }
+
+  String customFormat4() {
+    return "The user is called '${name.toUpperCase()}' "
+        "and has id '${id.toUpperCase()}'";
+  }
+
+  String customFormat5() {
+    return 'The user is called "${name.toUpperCase()}" '
+        'and has id "${id.toUpperCase()}"';
   }
 }
