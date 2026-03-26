@@ -1,3 +1,7 @@
+## 1.2.1
+
+- Updated README to clarify that `--exclude-line` content matching trims leading and trailing whitespace.
+
 ## 1.2.0
 
 - **Breaking:** `BuggyConfig.excludePattern` (`String?`) replaced with `excludePatterns` (`List<String>`).

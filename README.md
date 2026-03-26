@@ -116,7 +116,7 @@ Excludes specific lines from coverage calculations. This is useful when certain 
 
 Format: `file_path:line_number:line_content`
 
-All three parts are required. The line content is verified against the actual source file to prevent stale exclusions.
+All three parts are required. The line content is verified against the actual source file to prevent stale exclusions. Leading and trailing whitespace is trimmed from both the provided content and the source line before comparison, so indentation can be omitted.
 
 ```bash
 buggy report --exclude-line "lib/user.dart:45:String customFormat() {"
