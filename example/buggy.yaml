@@ -1,0 +1,19 @@
+commands:
+  report:
+    presets:
+      - name: ci
+        fail-under: 80
+        summary: true
+        exclude:
+          - "*.g.dart"
+          - "*.freezed.dart"
+      - name: full
+        no-filter: true
+  run:
+    flutter-test-coverage-workaround:
+      presets:
+        - name: default
+          exclude:
+            - "*.g.dart"
+            - "*.freezed.dart"
+          target: test

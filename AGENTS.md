@@ -56,6 +56,12 @@ All core logic lives in a single file: `lib/buggy.dart`. It exports:
 - `run` — general-purpose parent command for utility subcommands
   - `flutter-test-coverage-workaround` — generates `<target>/.buggy/coverage_fix_test.dart` (target: `test` or `integration_test`) that imports all `lib/` files, fixing Flutter's coverage blind spot for unimported files
 
+### Config file (`buggy.yaml`)
+
+Users can create a `buggy.yaml` (or `buggy.yml`) in their project root to define named presets for any command. Presets are resolved via `--preset <name>` / `-p <name>`. YAML keys match CLI option names exactly. Nested commands use nested YAML objects. Preset values are prepended as synthetic CLI args, so CLI flags override single-value options and accumulate with multi-options.
+
+Config loading lives in `lib/utils/config_file.dart`, preset resolution in `lib/utils/preset.dart`.
+
 The `example/` directory is a standalone Dart project with intentionally partial test coverage, used to demonstrate Buggy's output.
 
 The `example_flutter/` directory is a standalone Flutter project (no widgets, uses `ChangeNotifier`/`ValueNotifier`) with intentionally partial coverage, used to demonstrate the Flutter coverage workaround.

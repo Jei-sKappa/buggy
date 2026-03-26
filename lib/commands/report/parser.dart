@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:buggy/commands/report/report.dart';
+import 'package:buggy/utils/preset.dart';
 
 /// Builds the argument parser for the 'report' command.
 ///
@@ -54,6 +55,11 @@ ArgParser buildParser() {
       negatable: false,
       help:
           'Disable filtering of common useless lines (@override, braces, etc.)',
+    )
+    ..addOption(
+      'preset',
+      abbr: 'p',
+      help: 'Use a named preset from buggy.yaml.',
     );
 }
 
@@ -84,7 +90,7 @@ Future<void> handleCommand(
   final reportParser = buildParser();
 
   try {
-    final results = reportParser.parse(arguments);
+    var results = reportParser.parse(arguments);
 
     // Handle report-specific help
     if (results.flag('help')) {
@@ -92,8 +98,21 @@ Future<void> handleCommand(
       return;
     }
 
+    // Resolve preset if specified
+    final preset = resolvePreset(
+      results: results,
+      arguments: arguments,
+      parser: reportParser,
+      commandPath: ['report'],
+    );
+    results = preset.results;
+
     if (verbose) {
       print('[VERBOSE] Report arguments: $arguments');
+      if (preset.resolvedArguments != null) {
+        print('[VERBOSE] Report resolved arguments: '
+            '${preset.resolvedArguments}');
+      }
     }
 
     // Parse fail-under option

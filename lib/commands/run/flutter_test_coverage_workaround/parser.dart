@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:buggy/commands/run/flutter_test_coverage_workaround/flutter_test_coverage_workaround.dart';
+import 'package:buggy/utils/preset.dart';
 
 /// Builds the argument parser for the 'flutter-test-coverage-workaround'
 /// subcommand.
@@ -33,6 +34,11 @@ ArgParser buildParser() {
       help: 'Target test directory.',
       allowed: ['test', 'integration_test'],
       defaultsTo: 'test',
+    )
+    ..addOption(
+      'preset',
+      abbr: 'p',
+      help: 'Use a named preset from buggy.yaml.',
     );
 }
 
@@ -62,17 +68,32 @@ Future<void> handleCommand(
   final parser = buildParser();
 
   try {
-    final results = parser.parse(arguments);
+    var results = parser.parse(arguments);
 
     if (results.flag('help')) {
       printUsage(parser);
       return;
     }
 
+    // Resolve preset if specified
+    final preset = resolvePreset(
+      results: results,
+      arguments: arguments,
+      parser: parser,
+      commandPath: ['run', 'flutter-test-coverage-workaround'],
+    );
+    results = preset.results;
+
     if (verbose) {
       print(
         '[VERBOSE] flutter-test-coverage-workaround arguments: $arguments',
       );
+      if (preset.resolvedArguments != null) {
+        print(
+          '[VERBOSE] flutter-test-coverage-workaround resolved arguments: '
+          '${preset.resolvedArguments}',
+        );
+      }
     }
 
     final includePatterns = results.multiOption('include');
