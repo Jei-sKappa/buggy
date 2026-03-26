@@ -36,6 +36,23 @@ commands:
           - "lib/user.dart:68:String customFormat5() {"
           - "lib/user.dart:69:return 'The user is called \"${name.toUpperCase()}\" '"
           - "lib/user.dart:70:'and has id \"${id.toUpperCase()}\"';"
+      - name: exclude-line-error-file-not-found
+        exclude-line:
+          # This file does not exist — triggers a "file not found" error.
+          - "lib/nonexistent.dart:1:void main() {"
+      - name: exclude-line-error-line-out-of-range
+        exclude-line:
+          # Line 999 does not exist in user.dart — triggers an "out of range" error.
+          - "lib/user.dart:999:does not matter"
+      - name: exclude-line-error-content-mismatch
+        exclude-line:
+          # This content is intentionally wrong — triggers a "content mismatch" error.
+          # The actual line is: User copyWith({String? id, String? name}) {
+          - "lib/user.dart:20:User copyWith({String? id}) {"
+      - name: exclude-line-error-not-uncovered
+        exclude-line:
+          # Line 9 is the constructor and is covered — triggers a "not uncovered" error.
+          - "lib/user.dart:9:const User({required this.id, required this.name});"
   run:
     flutter-test-coverage-workaround:
       presets:

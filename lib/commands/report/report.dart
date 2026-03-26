@@ -427,6 +427,36 @@ _CoverageData _applyFilters(_CoverageData coverageData, ReportConfig config) {
   final filtered = <String, Map<String, dynamic>>{};
   final excludeLines = _parseExcludeLinePatterns(config.excludeLinePatterns);
 
+  // Validate all exclude-line entries upfront (filesystem checks)
+  for (final exclude in excludeLines) {
+    final file = File(exclude.filePath);
+    if (!file.existsSync()) {
+      stderr.writeln(
+        'Error: --exclude-line file not found: ${exclude.filePath}',
+      );
+      exit(1);
+    }
+    final sourceLines = file.readAsLinesSync();
+    if (exclude.lineNumber <= 0 || exclude.lineNumber > sourceLines.length) {
+      stderr.writeln(
+        'Error: --exclude-line line number ${exclude.lineNumber} out of range '
+        'for ${exclude.filePath} (file has ${sourceLines.length} lines)',
+      );
+      exit(1);
+    }
+    final actualContent = sourceLines[exclude.lineNumber - 1].trim();
+    if (actualContent != exclude.content) {
+      stderr
+        ..writeln(
+          'Error: --exclude-line content mismatch for '
+          '${exclude.filePath}:${exclude.lineNumber}',
+        )
+        ..writeln('  Expected: "${exclude.content}"')
+        ..writeln('  Actual:   "$actualContent"');
+      exit(1);
+    }
+  }
+
   for (final entry in coverageData.entries) {
     final filePath = entry.key;
     final fileData = entry.value;
@@ -453,32 +483,17 @@ _CoverageData _applyFilters(_CoverageData coverageData, ReportConfig config) {
         final newUncoveredLines = List<int>.from(uncoveredLines);
         var totalDecrement = 0;
 
-        // Read source file once for content verification
-        final sourceFile = File(filePath);
-        final sourceLines =
-            sourceFile.existsSync() ? sourceFile.readAsLinesSync() : <String>[];
-
         for (final exclude in matchingEntries) {
-          if (!newUncoveredLines.contains(exclude.lineNumber)) continue;
-
-          // Verify content matches
-          if (exclude.lineNumber > 0 &&
-              exclude.lineNumber <= sourceLines.length) {
-            final actualContent =
-                sourceLines[exclude.lineNumber - 1].trim();
-            if (actualContent == exclude.content) {
-              newUncoveredLines.remove(exclude.lineNumber);
-              totalDecrement++;
-            } else {
-              stderr
-                ..writeln(
-                  'Warning: --exclude-line content mismatch for '
-                  '${_makeRelativePath(filePath)}:${exclude.lineNumber}',
-                )
-                ..writeln('  Expected: "${exclude.content}"')
-                ..writeln('  Actual:   "$actualContent"');
-            }
+          if (!newUncoveredLines.contains(exclude.lineNumber)) {
+            stderr.writeln(
+              'Error: --exclude-line target is not an uncovered line: '
+              '${_makeRelativePath(filePath)}:${exclude.lineNumber}'
+              ':${exclude.content}',
+            );
+            exit(1);
           }
+          newUncoveredLines.remove(exclude.lineNumber);
+          totalDecrement++;
         }
 
         if (totalDecrement > 0) {
